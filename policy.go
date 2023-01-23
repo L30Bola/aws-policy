@@ -3,7 +3,6 @@ package awspolicy
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog/log"
@@ -177,20 +176,25 @@ func (statementJSON *Statement) Parse(statement map[string]interface{}) {
 				}
 			}
 		case "Condition":
+			statementJSON.Condition = make(Condition)
 			// Condition can be string, []string or map(lot of options)
 			switch statementValue := statementValue.(type) {
-			case string:
-				condition = make([]string, 0)
-				statementJSON.Condition = append(condition, statementValue)
-			case []interface{}:
-				err = mapstructure.Decode(statementValue, &statementJSON.Condition)
-				if err != nil {
-					log.Error().Str("Error parsing policies", "Error using mapstructure parsing Policy statement condition element").Err(err).Msg("")
+			case map[string]map[string]interface{}:
+				for conditionOperator, condition := range statementValue {
+					statementJSON.Condition[conditionOperator] = make(map[string][]string)
+					for conditionKey, conditionValue := range condition {
+						switch conditionValue := conditionValue.(type) {
+						case string:
+							cnd := make([]string, 0)
+							statementJSON.Condition[conditionOperator][conditionKey] = append(cnd, conditionValue)
+						case []string:
+							err = mapstructure.Decode(statementValue, &statementJSON.Condition)
+							if err != nil {
+								log.Error().Str("Error parsing policies", "Error using mapstructure parsing Policy statement condition element").Err(err).Msg("")
+							}
+						}
+					}
 				}
-			// If map format as raw text and store it as string
-			case map[string]interface{}:
-				condition = make([]string, 0)
-				statementJSON.Condition = append(condition, fmt.Sprintf("%v", statementValue))
 			}
 		}
 	}

@@ -17,5 +17,7 @@ type Statement struct {
 	NotAction    []string            `json:"NotAction,omitempty"`    // matches everything except
 	Resource     []string            `json:"Resource,omitempty"`     // object or objects that the statement covers
 	NotResource  []string            `json:"NotResource,omitempty"`  // matches everything except
-	Condition    []string            `json:"Condition,omitempty"`    // conditions for when a policy is in effect
+	Condition    Condition           `json:"Condition,omitempty"`    // conditions for when a policy is in effect
 }
+
+type Condition map[string]map[string][]string
