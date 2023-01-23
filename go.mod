@@ -1,4 +1,4 @@
-module github.com/n4ch04/aws-policy
+module github.com/L30Bola/aws-policy
 
 go 1.15
 
