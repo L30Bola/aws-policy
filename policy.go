@@ -180,13 +180,13 @@ func (statementJSON *Statement) Parse(statement map[string]interface{}) {
 			// Condition can be string, []string or map(lot of options)
 			switch statementValue := statementValue.(type) {
 			case map[string]map[string]interface{}:
-				for conditionOperator, condition := range statementValue {
+				for conditionOperator, conditionKeyValue := range statementValue {
 					statementJSON.Condition[conditionOperator] = make(map[string][]string)
-					for conditionKey, conditionValue := range condition {
+					for conditionKey, conditionValue := range conditionKeyValue {
 						switch conditionValue := conditionValue.(type) {
 						case string:
-							cnd := make([]string, 0)
-							statementJSON.Condition[conditionOperator][conditionKey] = append(cnd, conditionValue)
+							condition = make([]string, 0)
+							statementJSON.Condition[conditionOperator][conditionKey] = append(condition, conditionValue)
 						case []string:
 							err = mapstructure.Decode(statementValue, &statementJSON.Condition)
 							if err != nil {
