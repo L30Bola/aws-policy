@@ -178,19 +178,24 @@ func (statementJSON *Statement) Parse(statement map[string]interface{}) {
 		case "Condition":
 			statementJSON.Condition = make(Condition)
 			// Condition can be string, []string or map(lot of options)
-			switch statementValue := statementValue.(type) {
-			case map[string]map[string]interface{}:
-				for conditionOperator, conditionKeyValue := range statementValue {
-					statementJSON.Condition[conditionOperator] = make(map[string][]string)
-					for conditionKey, conditionValue := range conditionKeyValue {
-						switch conditionValue := conditionValue.(type) {
-						case string:
-							condition = make([]string, 0)
-							statementJSON.Condition[conditionOperator][conditionKey] = append(condition, conditionValue)
-						case []string:
-							err = mapstructure.Decode(statementValue, &statementJSON.Condition)
-							if err != nil {
-								log.Error().Str("Error parsing policies", "Error using mapstructure parsing Policy statement condition element").Err(err).Msg("")
+			switch conditionBlocks := statementValue.(type) {
+			case map[string]interface{}:
+				for conditionOperator, conditionEntryKeyValue := range conditionBlocks {
+					switch conditionBlock := conditionEntryKeyValue.(type) {
+					case map[string]interface{}:
+						statementJSON.Condition[conditionOperator] = make(map[string][]string)
+						for conditionKey, conditionValue := range conditionBlock {
+							switch conditionEntry := conditionValue.(type) {
+							case string:
+								condition = make([]string, 0)
+								statementJSON.Condition[conditionOperator][conditionKey] = append(condition, conditionEntry)
+							case []interface{}:
+								stringSlice := make([]string, 0)
+								err = mapstructure.Decode(conditionEntry, &stringSlice)
+								if err != nil {
+									log.Error().Str("Error parsing policies", "Error using mapstructure parsing Policy statement condition element").Err(err).Msg("")
+								}
+								statementJSON.Condition[conditionOperator][conditionKey] = stringSlice
 							}
 						}
 					}

@@ -2,6 +2,8 @@ package awspolicy
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var validatePolicies = []struct {
@@ -17,14 +19,23 @@ var validatePolicies = []struct {
 			{
 				"Effect": "Allow",
 				"Action": [
-				  "sts:AssumeRole"
+					"sts:AssumeRole"
 				],
 				"Resource": [
-				  "arn:aws:iam::99999999999:role/admin"
-				]
+					"arn:aws:iam::99999999999:role/admin"
+				],
+				"Condition": {
+				    "StringEqualsIgnoreCase": {
+						"aws:PrincipalTag/department": [ "finance", "hr", "legal" ],
+						"aws:PrincipalTag/role": [ "audit", "security" ]
+				  	},
+				  	"StringEquals": {
+						"aws:PrincipalAccount": "99999999999"
+				  	}
+				}
 			}
-		]
-	}		
+		] 
+	}
 	`), outputPolicy: Policy{
 			Version: "2012-10-17",
 			ID:      "",
@@ -42,8 +53,27 @@ var validatePolicies = []struct {
 					NotAction:   []string{},
 					Resource:    []string{},
 					NotResource: []string{},
-					Condition:   []string{},
-				}}}, parsed: nil,
+					Condition: Condition{
+						"StringEqualsIgnoreCase": {
+							"aws:PrincipalTag/department": []string{
+								"finance",
+								"hr",
+								"legal",
+							},
+							"aws:PrincipalTag/role": []string{
+								"audit",
+								"security",
+							},
+						},
+						"StringEquals": {
+							"aws:PrincipalAccount": []string{
+								"99999999999",
+							},
+						},
+					},
+				},
+			},
+		}, parsed: nil,
 	},
 	{
 		inputPolicy: []byte(`
@@ -108,7 +138,7 @@ var validatePolicies = []struct {
 						"arn:aws:athena:eu-west-5:*:workgroup/AthenaWorkGroup",
 					},
 					NotResource: []string{},
-					Condition:   []string{},
+					Condition:   Condition{},
 				}, {
 					Effect: "Allow",
 					Action: []string{
@@ -124,7 +154,7 @@ var validatePolicies = []struct {
 						"glue:GetCatalogImportStatus"},
 					Resource:    []string{"*"},
 					NotResource: []string{},
-					Condition:   []string{},
+					Condition:   Condition{},
 				}, {
 					Effect: "Allow",
 					Action: []string{
@@ -141,9 +171,10 @@ var validatePolicies = []struct {
 						"arn:aws:s3:::bucket1/*",
 					},
 					NotResource: []string{},
-					Condition:   []string{},
+					Condition:   Condition{},
 				}}}, parsed: nil,
-	}}
+	},
+}
 
 func TestParsePolicies(t *testing.T) {
 	for _, test := range validatePolicies {
@@ -151,7 +182,10 @@ func TestParsePolicies(t *testing.T) {
 		t.Run(string(test.inputPolicy), func(t *testing.T) {
 			got := policy.UnmarshalJSON(test.inputPolicy)
 			if got != test.parsed {
-				t.Errorf("Expected: %v, got: %v", test.parsed, got)
+				t.Errorf("Expected: %+v, got: %+v", test.parsed, got)
+			}
+			if !cmp.Equal(policy, test.outputPolicy) {
+				t.Errorf("Expected: %+v, got: %+v", test.outputPolicy, policy)
 			}
 		})
 	}
