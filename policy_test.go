@@ -177,6 +177,80 @@ var validatePolicies = []struct {
 		},
 		parsed: nil,
 	},
+	{
+		inputPolicy: []byte(`
+		{
+			"Version": "2012-10-17",
+			"Statement": [
+				{
+					"Effect": "Allow",
+					"Action": "s3:PutObject",
+					"Resource": "arn:aws:s3:::BUCKET-NAME/home/${aws:username}/*"
+				}
+			]
+		}
+		`),
+		outputPolicy: Policy{
+			Version: "2012-10-17",
+			Statements: []Statement{
+				{
+					Effect: "Allow",
+					Action: []string{
+						"s3:PutObject",
+					},
+					Resource: []string{
+						"arn:aws:s3:::BUCKET-NAME/home/${aws:username}/*",
+					},
+				},
+			},
+		},
+		parsed: nil,
+	},
+	{
+		inputPolicy: []byte(`
+		{
+			"Version": "2012-10-17",
+			"Statement": [
+				{
+					"Effect": "Deny",
+					"NotPrincipal": {
+						"AWS": [
+							"arn:aws:iam::444455556666:user/Bob",
+							"arn:aws:iam::444455556666:root"
+						]
+					},
+					"NotAction": "iam:*",
+					"NotResource": [
+						"arn:aws:s3:::HRBucket/Payroll",
+						"arn:aws:s3:::HRBucket/Payroll/*"
+					]
+				}
+			]
+		}
+		`),
+		outputPolicy: Policy{
+			Version: "2012-10-17",
+			Statements: []Statement{
+				{
+					Effect: "Deny",
+					NotPrincipal: map[string][]string{
+						"AWS": {
+							"arn:aws:iam::444455556666:user/Bob",
+							"arn:aws:iam::444455556666:root",
+						},
+					},
+					NotAction: []string{
+						"iam:*",
+					},
+					NotResource: []string{
+						"arn:aws:s3:::HRBucket/Payroll",
+						"arn:aws:s3:::HRBucket/Payroll/*",
+					},
+				},
+			},
+		},
+		parsed: nil,
+	},
 }
 
 func TestParsePolicies(t *testing.T) {
