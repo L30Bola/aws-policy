@@ -21,6 +21,9 @@ var validatePolicies = []struct {
 				"Action": [
 					"sts:AssumeRole"
 				],
+				"Principal": {
+					"AWS": "arn:aws:iam::1234567890:root"
+				},
 				"Resource": [
 					"arn:aws:iam::99999999999:role/admin"
 				],
@@ -41,18 +44,16 @@ var validatePolicies = []struct {
 			ID:      "",
 			Statements: []Statement{
 				{
-					StatementID: "",
-					Effect:      "Allow",
-					Principal: map[string][]string{
-						"AWS": {"arn:aws:iam::1234567890:root"},
-					},
-					NotPrincipal: map[string][]string{},
+					Effect: "Allow",
 					Action: []string{
 						"sts:AssumeRole",
 					},
-					NotAction:   []string{},
-					Resource:    []string{},
-					NotResource: []string{},
+					Principal: map[string][]string{
+						"AWS": {"arn:aws:iam::1234567890:root"},
+					},
+					Resource: []string{
+						"arn:aws:iam::99999999999:role/admin",
+					},
 					Condition: Condition{
 						"StringEqualsIgnoreCase": {
 							"aws:PrincipalTag/department": []string{
@@ -129,7 +130,6 @@ var validatePolicies = []struct {
 			`),
 		outputPolicy: Policy{
 			Version: "2012-10-17",
-			ID:      "",
 			Statements: []Statement{
 				{
 					Effect: "Allow",
@@ -137,9 +137,8 @@ var validatePolicies = []struct {
 					Resource: []string{
 						"arn:aws:athena:eu-west-5:*:workgroup/AthenaWorkGroup",
 					},
-					NotResource: []string{},
-					Condition:   Condition{},
-				}, {
+				},
+				{
 					Effect: "Allow",
 					Action: []string{
 						"glue:GetDatabase",
@@ -151,11 +150,13 @@ var validatePolicies = []struct {
 						"glue:GetPartition",
 						"glue:GetPartitions",
 						"glue:BatchGetPartition",
-						"glue:GetCatalogImportStatus"},
-					Resource:    []string{"*"},
-					NotResource: []string{},
-					Condition:   Condition{},
-				}, {
+						"glue:GetCatalogImportStatus",
+					},
+					Resource: []string{
+						"*",
+					},
+				},
+				{
 					Effect: "Allow",
 					Action: []string{
 						"s3:GetObject",
@@ -165,14 +166,16 @@ var validatePolicies = []struct {
 						"s3:AbortMultipartUpload",
 						"s3:CreateBucket",
 						"s3:ListAllMyBuckets",
-						"s3:GetBucketLocation"},
+						"s3:GetBucketLocation",
+					},
 					Resource: []string{
 						"arn:aws:s3:::bucket1",
 						"arn:aws:s3:::bucket1/*",
 					},
-					NotResource: []string{},
-					Condition:   Condition{},
-				}}}, parsed: nil,
+				},
+			},
+		},
+		parsed: nil,
 	},
 }
 
@@ -184,7 +187,7 @@ func TestParsePolicies(t *testing.T) {
 			if got != test.parsed {
 				t.Errorf("Expected: %+v, got: %+v", test.parsed, got)
 			}
-			if !cmp.Equal(policy, test.outputPolicy) {
+			if !cmp.Equal(test.outputPolicy, policy) {
 				t.Errorf("Expected: %+v, got: %+v", test.outputPolicy, policy)
 			}
 		})
